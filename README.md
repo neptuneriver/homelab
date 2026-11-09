@@ -11,6 +11,10 @@ flowchart TB
     laptop["Laptop<br/>control center"]
     tailnet{{"Tailscale tailnet<br/>no open router ports"}}
     internet(["Internet"])
+    udm["UniFi Dream Machine Pro<br/>router, firewall, camera recorder"]
+    sw["UniFi Pro 24 PoE switch"]
+    aps["Wi-Fi access points"]
+    protect["Cameras, doorbells, Access Hub<br/>own network, no internet"]
 
     subgraph house["House node · Intel N150 · Proxmox"]
         ha["Home Assistant VM"]
@@ -30,6 +34,14 @@ flowchart TB
         smb["Backup share"]
     end
 
+    internet === udm
+    udm ===|"10G SFP+"| sw
+    sw === house
+    sw === lab
+    sw === ai
+    sw === aps
+    sw === protect
+
     laptop --> tailnet
     tailnet --> house
     tailnet --> lab
@@ -41,12 +53,16 @@ flowchart TB
     house -.->|"weekly backups"| smb
 ```
 
+Thick lines are physical cables. Thin arrows are the paths traffic takes over them: Tailscale for private access, and the Cloudflare tunnel for Home Assistant. Both leave through the UDM Pro, which has no ports open to the internet.
+
 | Node | Hardware | OS | Job |
 | --- | --- | --- | --- |
 | Laptop | MacBook | macOS | Control center: SSH, Proxmox web UI, RDP, Screen Sharing |
 | House node (`pve-house`) | Intel N150 mini PC, 16 GB, 256 GB SSD | Proxmox VE 9 | Home Assistant, Cloudflare tunnel, Tailscale subnet router, monitoring |
 | Lab node (`pve-lab`) | Minisforum X1 Lite, Ryzen 7 255, 32 GB DDR5, 1 TB NVMe | Proxmox VE 9 | VMs for containers and AI agents, a remote desktop, a sandbox |
 | AI node (`mac-mini`) | Mac mini, Apple M6, 32 GB unified memory | macOS 26 | Local LLM inference with Ollama, backup target |
+| Gateway | UniFi Dream Machine Pro | UniFi OS | Router, firewall, camera recording, door access |
+| Switch | UniFi Pro 24 PoE | UniFi | Wired network, and power for cameras, doorbells and Wi-Fi |
 
 The network is UniFi: a Dream Machine Pro gateway, a Pro 24 PoE switch, four Wi-Fi 7 access points, six Protect cameras and doorbells, and an Access Hub for the door locks.
 
