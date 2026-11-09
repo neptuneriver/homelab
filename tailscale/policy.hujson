@@ -1,0 +1,47 @@
+// Tailscale policy for the homelab tailnet.
+//
+// Paste into the admin console: Access controls > Edit policy file.
+// Apply this BEFORE tagging machines. A tag must be defined in tagOwners
+// before it can be assigned.
+//
+// Tags:
+//   tag:server  Proxmox hosts and the desk VM
+//   tag:agents  VMs that run AI agents (docker-host, sandbox)
+//   tag:llm     the Mac mini model server
+{
+	"tagOwners": {
+		"tag:server": ["autogroup:admin"],
+		"tag:agents": ["autogroup:admin"],
+		"tag:llm":    ["autogroup:admin"],
+	},
+
+	"acls": [
+		// Your own (user-owned, untagged) devices can reach everything,
+		// including the home LAN through the house node's subnet route.
+		{"action": "accept", "src": ["autogroup:member"], "dst": ["*:*"]},
+
+		// Agent VMs can reach the model server's Ollama port, and nothing else.
+		{"action": "accept", "src": ["tag:agents"], "dst": ["tag:llm:11434"]},
+
+		// No rule lets tag:server or tag:llm start connections, so they stay passive.
+	],
+
+	// Optional: approve the house node's subnet route automatically.
+	// Replace the CIDR with your LAN range.
+	// "autoApprovers": {
+	// 	"routes": {"192.168.1.0/24": ["tag:server"]},
+	// },
+
+	// These run on every save. The console rejects a policy that fails them.
+	"tests": [
+		{
+			"src":    "tag:agents",
+			"accept": ["tag:llm:11434"],
+			"deny":   ["tag:llm:22", "tag:server:22", "tag:server:8006"],
+		},
+		{
+			"src":  "tag:server",
+			"deny": ["tag:llm:11434", "tag:agents:22"],
+		},
+	],
+}

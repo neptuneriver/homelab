@@ -1,0 +1,36 @@
+# Hardened starting point for an AI agent container.
+# Copy this folder for each agent, set the image, and fill in .env (never commit it).
+#
+# Before the first start, create the data folder owned by the container's user:
+#   mkdir -p data && sudo chown 1000:1000 data
+
+services:
+  agent:
+    image: ghcr.io/your-org/your-agent:latest   # replace with your agent's image
+    container_name: agent
+    restart: unless-stopped
+    env_file: .env
+
+    # Least privilege
+    user: "1000:1000"            # never run as root
+    read_only: true              # immutable root filesystem
+    tmpfs:
+      - /tmp                     # scratch space that disappears on restart
+    volumes:
+      - ./data:/data             # the only writable path
+    cap_drop:
+      - ALL                      # no Linux capabilities
+    security_opt:
+      - no-new-privileges:true   # setuid binaries can't escalate
+    # Never mount /var/run/docker.sock. It is root access to the host.
+
+    # Keep a runaway agent from starving the VM
+    mem_limit: 2g
+    cpus: 2.0
+    pids_limit: 256
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

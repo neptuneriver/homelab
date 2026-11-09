@@ -1,0 +1,22 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+*.p12
+secrets/
+
+# Proxmox backup archives
+*.vma
+*.vma.zst
+*.vma.gz
+
+# Agent data
+docker/**/data/
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
